@@ -4,3 +4,9 @@
 *.jar
 *.war
 *.ear
+
+# data files
+*.data
+*.raw
+*.gz
+*.tagged
