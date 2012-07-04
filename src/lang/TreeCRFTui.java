@@ -46,11 +46,11 @@ public class TreeCRFTui {
 		
 //		q.add(new ChainTemplate());
 //		Inference inference = new Viterbi();
-//		
 		q.add(new TreeTemplate());
 		Inference inference = new TreeViterbi();
 		
 		String file = "./model.G.ser.gz";
+//		String file = "./model.ser.gz";
 		Model model = null;
 		if (true) {
 			model = new Model(instanceList, instanceList2, q, inference);

@@ -182,7 +182,6 @@ public class Model implements Serializable {
 				}
 			}
 			scale = zs;
-//			Zx += Math.exp(zx - scale); == 1
 			Zx += 1;
 			for (int i = 0; i < featureSize; i++) {
 				expFF[i] += sCount[i];

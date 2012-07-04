@@ -19,16 +19,21 @@ public class RawToData {
 	 */
 	public static void main(String[] args) {
 		try {
-//			Scanner scanner = new Scanner(new FileInputStream("./trainG.data.raw"));
-//			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./trainG.data"), "UTF-8");
-			Scanner scanner = new Scanner(new FileInputStream("./testG.data.raw"));
-			Scanner preScanner = new Scanner(new FileInputStream("./testG.data.raw"));
-			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./testG.data"), "UTF-8");
+			Scanner scanner = new Scanner(new FileInputStream("./trainG.data.raw"));
+			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./trainG.data"), "UTF-8");
+//			Scanner scanner = new Scanner(new FileInputStream("./testG.data.raw"));
+//			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./testG.data"), "UTF-8");
+			StringBuilder instance = new StringBuilder();
+			boolean isOp = false;
 			while (scanner.hasNextLine()) {
 				String line = scanner.nextLine();
-				System.out.println(line);
+//				System.out.println(line);
 				if (!line.equals("")) {
 					String[] lines = line.split(" --- ");
+					
+					if (lines[0].equals("KEY:ATTR") || lines[0].equals("KEY:OP")) {
+						isOp = true;
+					}
 					
 					String[] elements = lines[2].split(" ");
 					
@@ -45,11 +50,19 @@ public class RawToData {
 					sb.append("#" + elements[2] + " ");
 					sb.append(elements[5] + " ");
 					sb.append(elements[6]);
-					System.out.println(sb.toString());
-					ow.write(sb.toString() + "\r\n");
+//					System.out.println(sb.toString());
+					instance.append(sb.toString() + "\r\n");
+//					ow.write(sb.toString() + "\r\n");
 				} else {
-					System.out.println();
-					ow.write("\r\n");
+//					System.out.println();
+					if (isOp) {
+						ow.write(instance.toString());
+						ow.write("\r\n");
+						isOp = false;
+						instance = new StringBuilder();
+					} else {
+						instance = new StringBuilder();
+					}
 				}
 			}
 			

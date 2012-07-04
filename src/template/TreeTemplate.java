@@ -30,15 +30,15 @@ public class TreeTemplate extends AbstractTemplate {
 		int length = timestampSequence.size();
 		instance.graph = new Graph(instance, featureSet, labelSet);
 		
-		for (int i = 0; i < length; i++) {
-			Timestamp timestamp = timestampSequence.get(i);
+		for (int t = 0; t < length; t++) {
+			Timestamp timestamp = timestampSequence.get(t);
 			FeatureVector featureVector = new FeatureVector();
 			int parent = timestamp.getParent();
 			String lString = timestamp.getLabel();
 			for (String fString : timestamp.getFeatures()) {
 				if (fString.startsWith("//")) {
 					
-				} else if (fString.startsWith("#")) {
+				} else if (fString.startsWith("#") && parent != t) {
 					if (parent < 0) {
 						continue;
 					}
@@ -80,7 +80,7 @@ public class TreeTemplate extends AbstractTemplate {
 				}
 			}
 			
-			instance.graph.addNode(parent, i);
+			instance.graph.addNode(parent, t);
 			featureSequence.add(featureVector);
 		}
 		

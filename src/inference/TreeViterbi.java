@@ -85,18 +85,19 @@ public class TreeViterbi extends Inference {
 					}
 				} else {
 					for (int i = 0; i < labelSize; i++) {
-						for (int j = 0; j < labelSize; j++) {
-							String lString = labelSet.labelByIndex(i).value();
-							Feature f = featureSet.lookupFeature(fString, null, lString);
-							if (f != null) {
+						String lString = labelSet.labelByIndex(i).value();
+						Feature f = featureSet.lookupFeature(fString, null, lString);
+						if (f != null) {
+							for (int j = 0; j < labelSize; j++) {
 								mTransp[t][j][i] += lambda[f.getIndex()];
 							}
 						}
 					}
 				}
 			}
-		}	
-		norm(mTransp, length, labelSize);
+		}
+		//!!! + *
+//		norm(mTransp, length, labelSize);
 		
 		// 先广扫描，记录所有的中间节点(//!!先广扫描是因为想实现动态归化算法，不过现在
 		// 没有实现。
@@ -188,15 +189,18 @@ public class TreeViterbi extends Inference {
 				
 				// cross 的值被固定了
 				if (graph.isCross(parent)) {
-					double p = V[parent][assignment.get(parent)] * transp[t][assignment.get(parent)][i];
+					//!!! + *
+//					double p = V[parent][assignment.get(parent)] * transp[t][assignment.get(parent)][i];
+					double p = V[parent][assignment.get(parent)] + transp[t][assignment.get(parent)][i];
 					path[t][i] = assignment.get(parent);
 					V[t][i] = p;
 				}  else {
 					for (int j = 0; j < labelSize; j++) { // j 是preLabelIndex
 						double p = 	0.0;
 						
-						
-						p = V[parent][j] * transp[t][j][i];
+						//!!!! + *
+//						p = V[parent][j] * transp[t][j][i];
+						p = V[parent][j] + transp[t][j][i];
 						
 						if (p > maxP) {
 							maxP = p;
@@ -231,7 +235,9 @@ public class TreeViterbi extends Inference {
 					}
 				}
 				
-				max *= maxP;
+				//!!!! + *
+//				max *= maxP;
+				max += maxP;
 				int temp = t;
 				
 				while (temp != Graph.ROOT) {
@@ -239,6 +245,19 @@ public class TreeViterbi extends Inference {
 					labelIndex = path[temp][labelIndex];
 					
 					temp = graph.parent(temp);
+				}
+			}
+		
+			// 孤立点
+			if (graph.parent(t) == t) {
+				double maxP = 0;
+				int labelIndex = 0;
+				for (int i = 0; i < labelSize; i++) {
+					if (mTransp[t][0][i] > maxP) {
+						maxP = mTransp[t][0][i];
+						labelIndex = i;
+						finalPath[t] = labelIndex;
+					}
 				}
 			}
 		}
