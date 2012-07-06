@@ -35,7 +35,7 @@ public class ChainTemplate extends AbstractTemplate {
 			FeatureVector featureVector = new FeatureVector();
 			String lString = timestamp.getLabel();
 			for (String fString : timestamp.getFeatures()) {
-				if (fString.startsWith("#") && false) {
+				if (fString.startsWith("#")) {
 					if (t <= 0) {
 						continue;
 					}

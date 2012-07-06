@@ -101,7 +101,7 @@ public class TreeCRFTui {
 			}
 			
 			model = new Model(instanceList, instanceList2, q, inference);
-			model.train(1000);
+			model.train(200);
 			writeGzippedObject(new File(modelPath), model);
 			System.err.println("Model saved!");
 			

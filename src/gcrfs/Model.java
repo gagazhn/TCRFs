@@ -63,7 +63,7 @@ public class Model implements Serializable {
 		this.isInit = true;
 		
 		mTemplateQueue.compile(mInstanceList, mFeatureSet, mLabelSet, true);
-//		mFeatureSet.tight(mInstanceList);
+		mFeatureSet.tight(mInstanceList);
 		mTemplateQueue.compile(mTestInsList, mFeatureSet, mLabelSet, false);
 		System.out.println("Compile to gain features: " + mFeatureSet.getFeatureSize());
 	}
@@ -92,15 +92,18 @@ public class Model implements Serializable {
 			// 迭代开始
 			System.err.println("Trainning...");
 			for (int i = 0; i < iter; i++) {
-				L = computeGravity(lambda, gravity, i);
+				System.err.println("ITER: " + i);
+				
+				L = computeGravity2(lambda, gravity, i);
+				
+				System.err.println("log-likelihood: " + (-L));
+				
 				LBFGS.lbfgs(lambda.length, 6, lambda, L, gravity, false, dragond, iprint, 0.001, 1.0e-16, iflag);
 				
 				if (iflag[0] == 0) {
 					break;
 				}
 				
-				System.err.println("ITER: " + i);
-				System.err.println("log-likelihood: " + (-L));
 				
 				// 训练过程中进行评测
 				Evaluation eval = new Evaluation(mFeatureSet, mLabelSet);
@@ -278,6 +281,234 @@ public class Model implements Serializable {
 		}
 		
 		return L;
+	}
+	
+	// version 2
+	private double computeGravity2(double[] lambda, double[] gravity, int iter) {
+		double logli = 0;
+		
+		int labelSize = mLabelSet.getLabelSize();
+		int featureSize = mFeatureSet.getFeatureSize();
+		
+		// temp zoom
+		double[][] Mi = new double[labelSize][labelSize];
+		double[] Vi = new double[labelSize];
+		double[] alpha = new double[labelSize];
+		double[] nextAlpha = new double[labelSize];
+		double[] ExpF = new double[featureSize];
+		// temp zoom
+		
+		// the last term
+		for (int i = 0; i < featureSize; i++) {
+			gravity[i] = -1.0 * lambda[i] / (SIGMA * SIGMA);
+			logli -= lambda[i] * lambda[i] / (2 * SIGMA * SIGMA);
+		}
+		
+		for (Instance instance : mInstanceList) {
+			int length = instance.getTimestampSequence().size();
+			
+			double[][] beta = new double[length][labelSize];
+			double[] scale = new double[length];
+			// init
+			scale[length - 1] = labelSize;
+			for (int i = 0; i < labelSize; i++) {
+				alpha[i] = 1;
+				beta[length - 1][i] = 1;
+			}
+			
+			scale(beta[length - 1], scale[length - 1]);
+			
+			for (int i = 0; i < featureSize; i++) {
+				ExpF[i] = 0;
+			}
+			// init end
+			
+			for (int i = length - 1; i > 0; i--) {
+				compute_log_Mi(instance, i, Mi, Vi, true);
+				double[] temp = copy(beta[i]);
+				mult(temp, temp, Vi);
+				//!!!!
+				// i - 1 == > parent
+				matric_mult(labelSize, beta[i - 1], Mi, temp, false);
+				
+				// scale
+				scale[i - 1] = sum(beta[i - 1]);
+				scale(beta[i - 1], scale[i - 1]);
+			}
+			
+			double seq_logli = 0;
+			for (int t = 0; t < length; t++) {
+				compute_log_Mi(instance, t, Mi, Vi, true);
+				
+				if (t > 0) {
+					double[] temp = copy(alpha);
+					matric_mult(labelSize, nextAlpha, Mi, temp, true);
+					mult(nextAlpha, nextAlpha, Vi);
+				} else {
+					nextAlpha = copy(Vi);
+				}
+				
+				for (Feature feature : instance.getFeatureSequence().get(t)) {
+					String fString = feature.getValue();
+					
+					gravity[feature.getIndex()]++;
+					seq_logli += lambda[feature.getIndex()];
+					
+					if (feature.type == Feature.TYPE_STATE) {
+						for (int i = 0; i < labelSize; i++) {
+//							String preLString = mLabelSet.labelByIndex(i).value();
+							String lString = mLabelSet.labelByIndex(i).value();
+							
+							Feature f = mFeatureSet.lookupFeature(fString, null, lString);
+							if (f != null) {
+								ExpF[f.getIndex()] += nextAlpha[i] * beta[t][i];
+							}
+						}
+					} else if (feature.type == Feature.TYPE_EDGE) {
+						for (int i = 0; i < labelSize; i++) {
+							for (int j = 0; j < labelSize; j++) {
+								String preLString = mLabelSet.labelByIndex(j).value();
+								String lString = mLabelSet.labelByIndex(i).value();
+								
+								Feature f = mFeatureSet.lookupFeature(fString, preLString, lString);
+								if (f != null) {
+									ExpF[f.getIndex()] += alpha[j] * Vi[i] * Mi[j][i] * beta[t][i];
+								}
+							}
+						}
+					}
+				}
+				
+				alpha = copy(nextAlpha);
+				// scale
+				scale(alpha, scale[t]);
+			}
+			
+			double Zx = sum(alpha);
+			
+			seq_logli -= Math.log(Zx);
+			
+			// scale
+			for (int i = 0; i < length; i++) {
+				seq_logli -= Math.log(scale[i]);
+			}
+			
+			logli += seq_logli;
+			
+			for (int i = 0; i < featureSize; i++) {
+				gravity[i] -= ExpF[i] / Zx;
+			}
+		}
+		
+		// 因为要求最小值，将L与G反转
+		logli *= -1.0;
+		for (int i = 0; i < gravity.length; i++) {
+			gravity[i] *= -1.0;
+		}
+		
+		return logli;
+	}
+	
+	private void compute_log_Mi(Instance instance, int t, double[][] Mi, double[] Vi, boolean E) {
+		int labelSize = mLabelSet.getLabelSize();
+		double[] lambda = mFeatureSet.getLambda();
+		
+		for (int i = 0; i < labelSize; i++) {
+			Vi[i] = 0;
+			
+			for (int j = 0; j < labelSize; j++) {
+				Mi[i][j] = 0;
+			}
+		}
+		
+		for (Feature feature : instance.getFeatureSequence().get(t)) {
+			String fString = feature.getValue();
+			
+			if (feature.type == Feature.TYPE_STATE) {
+				for (int i = 0; i < labelSize; i++) {
+					String lString = mLabelSet.labelByIndex(i).value();
+					
+					Feature f = mFeatureSet.lookupFeature(fString, null, lString);
+					if (f != null) {
+						Vi[i] += lambda[f.getIndex()];
+					}
+				}
+			} else if (feature.type == Feature.TYPE_EDGE) {
+				for (int i = 0; i < labelSize; i++) {
+					for (int j = 0; j < labelSize; j++) {
+						String preLString = mLabelSet.labelByIndex(j).value();
+						String lString = mLabelSet.labelByIndex(i).value();
+						
+						Feature f = mFeatureSet.lookupFeature(fString, preLString, lString);
+						if (f != null) {
+							Mi[j][i] += lambda[f.getIndex()];
+						}
+					}
+				}
+			}
+		}
+		
+		if (E) {
+			for (int i = 0; i < labelSize; i++) {
+				Vi[i] = Math.exp(Vi[i]);
+				
+				for (int j = 0; j < labelSize; j++) {
+					Mi[i][j] = Math.exp(Mi[i][j]);
+				}
+			}
+		}
+	}
+	
+	private void mult(double[] a, double[] x, double[] y) {
+		for (int i = 0; i < a.length; i++) {
+			a[i] = x[i] * y[i];
+		}
+	}
+	
+	private void matric_mult(int size, double[] x, double[][] A, double[] y, boolean T) {
+		if (!T) {
+			for (int i = 0; i < size; i++) {
+				x[i] = 0;
+				
+				for (int j = 0;  j < size; j++) {
+					x[i] += A[i][j] * y[j];
+				}
+			}
+		} else {
+			for (int i = 0; i < size; i++) {
+				x[i] = 0;
+				
+				for (int j = 0;  j < size; j++) {
+					x[i] += y[j] * A[j][i];
+				}
+			}
+		}
+	}
+	
+	private double sum(double[] x) {
+		double sum = 0;
+		
+		for (int i = 0; i < x.length; i++) {
+			sum += x[i];
+		}
+		
+		return sum;
+	}
+	
+	private double[] copy(double[] x) {
+		double[] copy = new double[x.length];
+		
+		for (int i = 0; i < x.length; i++) {
+			copy[i] = x[i];
+		}
+		
+		return copy;
+	}
+	
+	private void scale(double[] x, double scale) {
+		for (int i = 0; i < x.length; i++) {
+			x[i] = x[i] / scale;
+		}
 	}
 	
 	public FeatureSet features() {
