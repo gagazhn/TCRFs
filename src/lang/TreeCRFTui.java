@@ -38,6 +38,7 @@ public class TreeCRFTui {
 		String trainPath = null;
 		String testPath = null;
 		String modelPath = null;
+		String encoding = null;
 		
 		if (args.length == 0) {
 			System.err.println("Args error. Abort!");
@@ -45,24 +46,27 @@ public class TreeCRFTui {
 		} else {
 			cmd = args[0];
 			if (cmd.equals("--train")) {
-				if (args.length != 5) {
+				if (args.length != 6) {
 					System.err.println("Args error. Abort...");
 					System.exit(1);
 				}
 				
 				type = args[1];
-				trainPath = args[2];
-				testPath = args[3];
-				modelPath = args[4];
+				modelPath = args[2];
+				encoding = args[3];
+				trainPath = args[4];
+				testPath = args[5];
 			} else if (cmd.equals("--test")) {
 				if (args.length != 4) {
 					System.err.println("Args error. Abort...");
+					System.err.println(args.length);
+					System.err.println(args[2]);
 					System.exit(1);
 				}
 				
-				trainPath = args[1];
-				testPath = args[2];
-				modelPath = args[3];
+				modelPath = args[1];
+				encoding = args[2];
+				testPath = args[3];
 			} else {
 				System.err.println("Args error. Abort...");
 				System.exit(1);
@@ -72,43 +76,41 @@ public class TreeCRFTui {
 //		InstanceList instanceList = InstanceReader.read("trainG.data");
 //		InstanceList instanceList = InstanceReader.read("train.data");
 		
-		InstanceList instanceList = InstanceReader.read(trainPath);
-		
 //		InstanceList instanceList2 = InstanceReader.read("testG.data");
 //		InstanceList instanceList2 = InstanceReader.read("test.data");
-		
-		InstanceList instanceList2 = InstanceReader.read(testPath);
-		
-		System.err.println("Train data done.");
-		
-		TemplateQueue q = new TemplateQueue();
-		Inference inference = null;
-		
-		if (type.equals("chain")) {
-			q.add(new ChainTemplate());
-			inference = new Viterbi();
-		} else if (type.equals("tree")) {
-			q.add(new TreeTemplate());
-			inference = new TreeViterbi();
-		} else {
-			System.err.println("Only chain or tree be supported. Abort...");
-			System.exit(1);
-		}
-		
 		
 //		String file = "./model.G.ser.gz";
 //		String file = "./model.ser.gz";
 		Model model = null;
-		if ("train".equals(cmd)) {
+		if ("--train".equals(cmd)) {
+			InstanceList instanceList = InstanceReader.read(trainPath, encoding);
+			InstanceList instanceList2 = InstanceReader.read(testPath, encoding);
+			
+			TemplateQueue q = new TemplateQueue();
+			Inference inference = null;
+			
+			if (type.equals("chain")) {
+				q.add(new ChainTemplate());
+				inference = new Viterbi();
+			} else if (type.equals("tree")) {
+				q.add(new TreeTemplate());
+				inference = new TreeViterbi();
+			} else {
+				System.err.println("Only chain or tree be supported. Abort...");
+				System.exit(1);
+			}
+			
 			model = new Model(instanceList, instanceList2, q, inference);
-			model.train(200);
+			model.train(1000);
 			writeGzippedObject(new File(modelPath), model);
-			System.out.println("Model saved!");
-		} else if ("test".equals(cmd)){
+			System.err.println("Model saved!");
+			
+			model.test(instanceList2, Model.DEBUG_OUTPUT);
+		} else if ("--test".equals(cmd)){
+			InstanceList instanceList2 = InstanceReader.read(testPath, encoding);
 			model = (Model)readGzippedObject(new File(modelPath));
+			model.test(instanceList2, Model.DEBUG_OUTPUT);
 		}
-		
-		model.test(instanceList2);
 	}
 	
 	public static void writeGzippedObject (File f, Serializable obj) {

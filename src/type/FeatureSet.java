@@ -113,7 +113,7 @@ public class FeatureSet implements Serializable {
 		HashMap<String, Feature> tempM = new HashMap<String, Feature>();
 		ArrayList<Feature> tempL = new ArrayList<Feature>();
 		
-		int threshold = 3;
+		int threshold = 2;
 		int index = 0;
 		
 		for (Feature feature : mList) {

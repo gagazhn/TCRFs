@@ -40,6 +40,9 @@ public class Model implements Serializable {
 	
 	private final double SIGMA = 10;
 	
+	public static final int DEBUG_OUTPUT = 0;
+	public static final int CLEAN_OUTPUT = 1;
+	
 	/**
 	 * @param instanceList 训练数据
 	 * @param testInsList 训练阶段评测数据
@@ -60,7 +63,7 @@ public class Model implements Serializable {
 		this.isInit = true;
 		
 		mTemplateQueue.compile(mInstanceList, mFeatureSet, mLabelSet, true);
-		mFeatureSet.tight(mInstanceList);
+//		mFeatureSet.tight(mInstanceList);
 		mTemplateQueue.compile(mTestInsList, mFeatureSet, mLabelSet, false);
 		System.out.println("Compile to gain features: " + mFeatureSet.getFeatureSize());
 	}
@@ -82,12 +85,12 @@ public class Model implements Serializable {
 		double L = 0.0;
 		
 		// 调LBFGS方法对权重lambda[]进行更新
-		int[] iprint = {-1, 0};
+		int[] iprint = {0, 0};
 		int[] iflag = {0};
 		double[] dragond = new double[lambda.length];
 		try {
 			// 迭代开始
-			System.out.println("Trainning...");
+			System.err.println("Trainning...");
 			for (int i = 0; i < iter; i++) {
 				L = computeGravity(lambda, gravity, i);
 				LBFGS.lbfgs(lambda.length, 6, lambda, L, gravity, false, dragond, iprint, 0.001, 1.0e-16, iflag);
@@ -96,8 +99,8 @@ public class Model implements Serializable {
 					break;
 				}
 				
-				System.out.println("ITER: " + i);
-				System.out.println("likelihood: " + L);
+				System.err.println("ITER: " + i);
+				System.err.println("log-likelihood: " + (-L));
 				
 				// 训练过程中进行评测
 				Evaluation eval = new Evaluation(mFeatureSet, mLabelSet);
@@ -114,6 +117,7 @@ public class Model implements Serializable {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			System.exit(0);
 		}
 	}
 	
@@ -122,7 +126,7 @@ public class Model implements Serializable {
 	 * @param instanceList 文本
 	 * @param templateQueue 模板队列
 	 */
-	public void test(InstanceList instanceList) {
+	public void test(InstanceList instanceList, int outputType) {
 		mTemplateQueue.compile(instanceList, mFeatureSet, mLabelSet, false);
 		
 		Evaluation eval = new Evaluation(mFeatureSet, mLabelSet);
@@ -134,12 +138,18 @@ public class Model implements Serializable {
 				String fString = instance.getTimestampSequence().get(i).getFeatures().toString();
 				int labelIndex = mLabelSet.labelIndex(lString);
 				Label label = mLabelSet.labelByIndex(path.path[i]);
-//				System.out.println(fString + " " + lString + " " + label.value());
 				eval.statstic(labelIndex, path.path[i]);
-				System.out.println(fString + " >> " + lString + " " + label.value() + (lString.equals(label.value()) ? "" : " $$$$$$") + " " + path.score);
+				
+				if (outputType == Model.DEBUG_OUTPUT) {
+//				System.out.println(fString + " >> " + lString + " " + label.value() + (lString.equals(label.value()) ? "" : " $$$$$$") + " " + path.score);
+				System.out.println(fString + " >> " + lString + " " + label.value() + (lString.equals(label.value()) ? "" : " $$$$$$"));
+				} else if (outputType == Model.CLEAN_OUTPUT) {
+					System.out.println(label.value());
+				}
 			}
 			System.out.println();
 		}
+		
 		eval.info();
 	}
 	
@@ -154,8 +164,6 @@ public class Model implements Serializable {
 		
 		// p_theta(s|o)
 		double[] expF = new double[featureSize];
-		double Z = 0;
-		double[][] zz;
 		
 		// the last term
 		for (int i = 0; i < featureSize; i++) {
@@ -163,97 +171,105 @@ public class Model implements Serializable {
 			L -= lambda[i] * lambda[i] / (2 * SIGMA * SIGMA);
 		}
 		
-		// 计算p_theta(s|o)
+		// For each instance:
 		for (Instance instance : mInstanceList) {
 			int length = instance.getTimestampSequence().size();
-			//!!!!!性能
-			zz = new double[labelSize - 1][length];
-			double zs = 0;
-			double scale = 0;
-			int[] sCount = new int[featureSize];
-			double Zx = 0;
-			double[] expFF = new double[featureSize];
 			
-			// s
+			double scale = 0;
+			double[] expF_s = new double[featureSize];
+			double Z_o = 0;
+			
+			// 计算scale,防止指数过大
 			for (int i = 0; i < length; i++) {
 				for (Feature feature : instance.getFeatureSequence().get(i)) {
-					zs += lambda[feature.getIndex()];
-					sCount[feature.getIndex()]++;
+					scale += lambda[feature.getIndex()];
 				}
-			}
-			scale = zs;
-			Zx += 1;
-			for (int i = 0; i < featureSize; i++) {
-				expFF[i] += sCount[i];
 			}
 			
 			// pos: 在第pos个位置异化
+			// gLabel: 在pos处的异化值
+			// For each label sequence S:
 			for (int pos = 0; pos < length; pos++) {
 				for (int gLabel = 0; gLabel < labelSize - 1; gLabel++) {
+					
+					double P_s_o = 0.0;
+					
 					// f_k的数量
-					int[] fCount = new int[featureSize];
+					int[] C_s_i = new int[featureSize];
 					
 					// 一次将一个异化槽填满
-					for (int i = 0; i < length; i++) {
-						for (Feature feature : instance.getFeatureSequence().get(i)) {
-							if (i == pos) {
+					for (int t = 0; t < length; t++) {
+						for (Feature feature : instance.getFeatureSequence().get(t)) {
+							if (t == pos) {
 								String fString = feature.getValue();
 								int lIndex = feature.getLabel().getIndex();
 								String preLString = feature.getPreLabel() == null ? null : feature.getPreLabel().value();
 								String lString = mLabelSet.labelByIndex((lIndex + 1 + gLabel) % labelSize).value();
 								Feature f = mFeatureSet.lookupFeature(fString, preLString, lString);
 								if (f != null) {
-									zz[gLabel][pos] += lambda[f.getIndex()];
-									fCount[f.getIndex()]++;
+									P_s_o += lambda[f.getIndex()];
+									C_s_i[f.getIndex()]++;
 								}
-							} else if (instance.graph.parent(i) == pos && feature.type == Feature.TYPE_EDGE) {
+							} else if (instance.graph.parent(t) == pos && feature.type == Feature.TYPE_EDGE) {
 								int lIndex = feature.getLabel().getIndex();
 								String fString = feature.getValue();
 								String preLString = mLabelSet.labelByIndex((lIndex + 1 + gLabel) % labelSize).value();
 								String lString = feature.getLabel().value();
 								Feature f = mFeatureSet.lookupFeature(fString, preLString, lString);
 								if (f != null) {
-									zz[gLabel][pos] += lambda[f.getIndex()];
-									fCount[f.getIndex()]++;
+									P_s_o += lambda[f.getIndex()];
+									C_s_i[f.getIndex()]++;
 								}
 							} else {
-								zz[gLabel][pos] += lambda[feature.getIndex()];
-								fCount[feature.getIndex()]++;
+								P_s_o += lambda[feature.getIndex()];
+								C_s_i[feature.getIndex()]++;
 							}
 						}
 					}
 					
-					zz[gLabel][pos] = Math.exp(zz[gLabel][pos] - scale);
-					Zx += zz[gLabel][pos];
-					//!!
-					if (zz[gLabel][pos] > 1) {
-						
-					}
+					P_s_o = Math.exp(P_s_o - scale);
+					Z_o += P_s_o;
+
 					for (int i = 0; i < featureSize; i++) {
-						expFF[i] += zz[gLabel][pos] * fCount[i];
+						expF_s[i] += P_s_o * C_s_i[i];
 					}
 				}
 			}
+			// S end
+			
+			// loop for the last time
+			double p = 0;
+			int[] c = new int[featureSize];
+			for (int t = 0; t < length; t++) {
+				for (Feature feature : instance.getFeatureSequence().get(t)) {
+					p += lambda[feature.getIndex()];
+					c[feature.getIndex()]++;
+					
+					gravity[feature.getIndex()]++;
+				}
+			}
+			L += p - scale;
+			p = Math.exp(p - scale);
+			Z_o += p;
 			
 			for (int i = 0; i < featureSize; i++) {
-				expFF[i] = expFF[i] / Zx;
+				expF_s[i] += p * c[i];
 			}
+			// loop end
+			
 			for (int i = 0; i < featureSize; i++) {
-				expF[i] += expFF[i];
+				expF_s[i] = expF_s[i] / Z_o;
+				expF[i] += expF_s[i];
 			}
-			Z += Math.log(Zx);
+			
+			L -= Math.log(Z_o);
 		}
+		// Instance End
 		
-		L -= Z;
-
 		// 梯度的前两个terms
 		for (int i = 0;  i < gravity.length; i++) {
 			gravity[i] -= expF[i];
-			gravity[i] += mFeatureSet.getFeatureByIndex(i).getFreq();
 		}
-		
-		//!!
-//		System.out.println("Likelihood: " + L);
 		
 		// 因为要求最小值，将L与G反转
 		L *= -1.0;

@@ -55,25 +55,26 @@ public class Viterbi extends Inference {
 				}
 			} else {
 				for (int i = 0; i < labelSize; i++) {
-					for (int j = 0; j < labelSize; j++) {
-						String lString = labelSet.labelByIndex(i).value();
-						Feature f = featureSet.lookupFeature(fString, null, lString);
-						if (f != null) {
-							int labelIndex = f.getLabel().getIndex();
-							int featureIndex = f.getIndex();
+					String lString = labelSet.labelByIndex(i).value();
+					Feature f = featureSet.lookupFeature(fString, null, lString);
+					if (f != null) {
+						int labelIndex = f.getLabel().getIndex();
+						int featureIndex = f.getIndex();
+						for (int j = 0; j < labelSize; j++) {
 							transp[j][labelIndex] += lambda[featureIndex];
 						}
 					}
 				}
 			}
 		}
+		//!!
 		norm(transp);
 		for (int i = 0; i < labelSize; i++) {
 			V[i][0] += transp[0][i];
-
+			
 			path[i][0] = i;
 		}
-
+		
 		for (int t = 1; t < path[0].length; t++) {
 			FeatureVector featureVector = instance.getFeatureSequence().get(t);
 			
@@ -101,21 +102,22 @@ public class Viterbi extends Inference {
 					}
 				} else {
 					for (int i = 0; i < labelSize; i++) {
-						for (int j = 0; j < labelSize; j++) {
-							String lString = labelSet.labelByIndex(i).value();
-							Feature f = featureSet.lookupFeature(fString, null, lString);
-							if (f != null) {
-								int labelIndex = f.getLabel().getIndex();
-								int featureIndex = f.getIndex();
+						String lString = labelSet.labelByIndex(i).value();
+						Feature f = featureSet.lookupFeature(fString, null, lString);
+						if (f != null) {
+							int labelIndex = f.getLabel().getIndex();
+							int featureIndex = f.getIndex();
+							for (int j = 0; j < labelSize; j++) {
 								transp[j][labelIndex] += lambda[featureIndex];
 							}
 						}
 					}
 				}
-
+				
 			}
+			//!!
 			norm(transp);
-
+			
 			for (int i = 0; i < labelSize; i++) {
 				double maxProbe = 0.0;
 				for (int j = 0; j < labelSize; j++) {
@@ -166,22 +168,26 @@ public class Viterbi extends Inference {
 		// }
 		// System.out.println();
 	}
+	
+//	private static void exp(double[][] transp) {
+//		
+//	}
 
 	private static void norm(double[][] transp) {
 		int row = transp.length;
 		int col = transp[0].length;
-		double z[] = new double[col];
+		double z = 0.0;
 
 		for (int i = 0; i < row; i++) {
 			for (int j = 0; j < row; j++) {
 				transp[i][j] = Math.exp(transp[i][j]);
-				z[i] += transp[i][j];
+				z += transp[i][j];
 			}
 		}
 
 		for (int i = 0; i < row; i++) {
 			for (int j = 0; j < row; j++) {
-				transp[i][j] /= z[i];
+				transp[i][j] /= z;
 			}
 		}
 	}

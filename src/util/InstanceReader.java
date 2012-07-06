@@ -1,30 +1,24 @@
 package util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.Reader;
-import java.util.Collections;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.util.Scanner;
 
-import type.Feature;
-import type.FeatureSet;
 import type.Timestamp;
 import type.TimestampSequence;
 import type.Instance;
 import type.InstanceList;
-import type.LabelSet;
 
 public class InstanceReader {
 
 	/**
 	 * @param args
 	 */
-	public static InstanceList read(String fileString) {
+	public static InstanceList read(String fileString, String encoding) {
 		InstanceList instanceList = new InstanceList();
 		
 		try {
-			Scanner scanner = new Scanner(new File(fileString));
+			Scanner scanner = new Scanner(new InputStreamReader(new FileInputStream(fileString), encoding));
 			TimestampSequence timestampSequence = new TimestampSequence();
 			while (scanner.hasNext()) {
 				String line = scanner.nextLine();
@@ -68,6 +62,6 @@ public class InstanceReader {
 	}
 	
 	public static void main(String[] args) {
-		InstanceReader.read("train.data");
+		InstanceReader.read("train.data", "UTF-8");
 	}
 }

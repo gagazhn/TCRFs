@@ -21,10 +21,6 @@ import type.TimestampSequence;
  * 特征的处理模板，定义了创建特征的方式
  */
 public class ChainTemplate extends AbstractTemplate {
-	/**
-	 * @param feautureSet
-	 * @param labelSet
-	 */
 	/** 
 	 * 将文本进行编译. 只考虑链式特征.
 	 * @param instance 测试文本
@@ -34,17 +30,17 @@ public class ChainTemplate extends AbstractTemplate {
 		int length = instance.getTimestampSequence().size();
 		instance.graph = new Graph(instance, featureSet, labelSet);
 		TimestampSequence timestampSequence = instance.getTimestampSequence();
-		for (int i = 0; i < length; i++) {
-			Timestamp timestamp = timestampSequence.get(i);
+		for (int t = 0; t < length; t++) {
+			Timestamp timestamp = timestampSequence.get(t);
 			FeatureVector featureVector = new FeatureVector();
 			String lString = timestamp.getLabel();
 			for (String fString : timestamp.getFeatures()) {
-				if (fString.startsWith("#")) {
-					if (i <= 0) {
+				if (fString.startsWith("#") && false) {
+					if (t <= 0) {
 						continue;
 					}
 					
-					String preLString = timestampSequence.get(i - 1).getLabel();
+					String preLString = timestampSequence.get(t - 1).getLabel();
 					if (create) {
 						Feature feature = featureSet.putAndGetFeature(fString, preLString, lString, Feature.TYPE_EDGE);
 						featureVector.add(feature);
@@ -68,8 +64,8 @@ public class ChainTemplate extends AbstractTemplate {
 			}
 			
 			// 不考虑图，只是用chain-crfs
-			if (i > 0) {
-				String preLString = timestampSequence.get(i - 1).getLabel();
+			if (t > 0) {
+				String preLString = timestampSequence.get(t - 1).getLabel();
 				if (create) {
 					Feature feature = featureSet.putAndGetFeature("TRANS", preLString, lString, Feature.TYPE_EDGE);
 					featureVector.add(feature);
@@ -81,7 +77,7 @@ public class ChainTemplate extends AbstractTemplate {
 				}
 			}
 			
-			instance.graph.addNode(i - 1, i);
+			instance.graph.addNode(t - 1, t);
 			featureSequence.add(featureVector);
 		}
 		

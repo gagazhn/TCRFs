@@ -56,19 +56,19 @@ public class Evaluation {
 	}
 	
 	public void info() {
-		System.out.println("===========================================================================");
-		System.out.println();
-		System.out.println("Label\t\tHIT\tRAW\tPRED\t\tPRE%\tREC%\tF%");
+		System.err.println("===========================================================================");
+		System.err.println();
+		System.err.println("Label\t\tHIT\tRAW\tPRED\t\tPRE%\tREC%\tF%");
 		for (int i = 0; i < mLabelSize; i++	) {
 			String lString = mLabelSet.labelByIndex(i).value();
 			String gap = lString.length() >= 8 ? "\t" : "\t\t";
 			double p = 1.0 * mHit[i] / mPredict[i];
 			double r = 1.0 * mHit[i] / mRaw[i];
 			double f = (BETA * BETA + 1) * p * r / (BETA * p + r);
-			System.out.println(lString + gap + mHit[i] + "\t" + mRaw[i] + "\t" + mPredict[i] + "\t\t" + df.format(p) + "\t" + df.format(r) + "\t" + df.format(f));
+			System.err.println(lString + gap + mHit[i] + "\t" + mRaw[i] + "\t" + mPredict[i] + "\t\t" + df.format(p) + "\t" + df.format(r) + "\t" + df.format(f));
 		}
-		System.out.println();
-		System.out.println("===========================================================================");
-		System.out.println();
+		System.err.println();
+		System.err.println("===========================================================================");
+		System.err.println();
 	}
 }
