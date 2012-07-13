@@ -74,19 +74,14 @@ public class Graph {
 	}
 	
 	public class Node{
-/*		double[][] transp;
-		double[] V;*/
-//		int[] path;
 		int parent;
-		ArrayList<Integer> children;
 		int timestamp;
+		
+		ArrayList<Integer> children;
 		
 		Node(int t) {
 			this.children = new ArrayList<Integer>();
 			this.timestamp = t;
-/*			this.V = new double[labelSize];
-			this.transp = new double[labelSize][labelSize];*/
-//			this.path = new int[labelSize];
 		}
 		
 		public String toString() {

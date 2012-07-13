@@ -19,8 +19,8 @@ public class RawToData {
 	 */
 	public static void main(String[] args) {
 		try {
-			Scanner scanner = new Scanner(new FileInputStream("./trainG.data.raw"));
-			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./trainG.data"), "UTF-8");
+			Scanner scanner = new Scanner(new FileInputStream("./testG.data.raw"));
+			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./testG.data"), "UTF-8");
 //			Scanner scanner = new Scanner(new FileInputStream("./testG.data.raw"));
 //			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./testG.data"), "UTF-8");
 			StringBuilder instance = new StringBuilder();

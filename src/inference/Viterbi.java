@@ -8,6 +8,7 @@
 package inference;
 
 import gcrfs.Evaluation;
+import gcrfs.Model;
 
 import java.util.LinkedList;
 
@@ -18,6 +19,7 @@ import type.Instance;
 import type.InstanceList;
 import type.Label;
 import type.LabelSet;
+import util.Matrix;
 
 /**
  * Viterbi算法
@@ -190,5 +192,130 @@ public class Viterbi extends Inference {
 				transp[i][j] /= z;
 			}
 		}
+	}
+	
+	// version 2
+	public double computeGravity(Model model, double[] lambda, double[] gravity, int iter) {
+		double logli = 0;
+		
+		int labelSize = model.labels().getLabelSize();
+		int featureSize = model.features().getFeatureSize();
+		
+		// temp zoom
+		double[][] Mi = new double[labelSize][labelSize];
+		double[] Vi = new double[labelSize];
+		double[] alpha = new double[labelSize];
+		double[] nextAlpha = new double[labelSize];
+		double[] ExpF = new double[featureSize];
+		// temp zoom
+		
+		// the last term
+		for (int i = 0; i < featureSize; i++) {
+			gravity[i] = -1.0 * lambda[i] / (Model.SIGMA * Model.SIGMA);
+			logli -= lambda[i] * lambda[i] / (2 * Model.SIGMA * Model.SIGMA);
+		}
+		
+		for (Instance instance : model.trainInstances()) {
+			int length = instance.getTimestampSequence().size();
+			
+			double[][] beta = new double[length][labelSize];
+			double[] scale = new double[length];
+			// init
+			scale[length - 1] = labelSize;
+			for (int i = 0; i < labelSize; i++) {
+				alpha[i] = 1;
+				beta[length - 1][i] = 1;
+			}
+			
+			Matrix.scale(beta[length - 1], scale[length - 1]);
+			
+			for (int i = 0; i < featureSize; i++) {
+				ExpF[i] = 0;
+			}
+			// init end
+			
+			// backward
+			for (int i = length - 1; i > 0; i--) {
+				model.compute_log_Mi(instance, i, Mi, Vi, true);
+				double[] temp = Matrix.copy(beta[i]);
+				Matrix.mult(temp, Vi);
+				Matrix.matric_mult(labelSize, beta[i - 1], Mi, temp, false);
+				
+				// scale
+				scale[i - 1] = Matrix.sum(beta[i - 1]);
+				Matrix.scale(beta[i - 1], scale[i - 1]);
+			}
+			
+			// forward
+			double seq_logli = 0;
+			for (int t = 0; t < length; t++) {
+				model.compute_log_Mi(instance, t, Mi, Vi, true);
+				
+				if (t > 0) {
+					double[] temp = Matrix.copy(alpha);
+					Matrix.matric_mult(labelSize, nextAlpha, Mi, temp, true);
+					Matrix.mult(nextAlpha, Vi);
+				} else {
+					nextAlpha = Matrix.copy(Vi);
+				}
+				
+				for (Feature feature : instance.getFeatureSequence().get(t)) {
+					String fString = feature.getValue();
+					
+					gravity[feature.getIndex()]++;
+					seq_logli += lambda[feature.getIndex()];
+					
+					if (feature.type == Feature.TYPE_STATE) {
+						for (int i = 0; i < labelSize; i++) {
+							String lString = model.labels().labelByIndex(i).value();
+							
+							Feature f = model.features().lookupFeature(fString, null, lString);
+							if (f != null) {
+								ExpF[f.getIndex()] += nextAlpha[i] * beta[t][i];
+							}
+						}
+					} else if (feature.type == Feature.TYPE_EDGE) {
+						for (int i = 0; i < labelSize; i++) {
+							for (int j = 0; j < labelSize; j++) {
+								String preLString = model.labels().labelByIndex(j).value();
+								String lString = model.labels().labelByIndex(i).value();
+								
+								Feature f = model.features().lookupFeature(fString, preLString, lString);
+								if (f != null) {
+									ExpF[f.getIndex()] += alpha[j] * Vi[i] * Mi[j][i] * beta[t][i];
+								}
+							}
+						}
+					}
+				}
+				
+				alpha = Matrix.copy(nextAlpha);
+				// scale
+				Matrix.scale(alpha, scale[t]);
+			}
+			
+			double Zx = Matrix.sum(alpha);
+			
+			seq_logli -= Math.log(Zx);
+			
+			// scale
+			for (int i = 0; i < length; i++) {
+				seq_logli -= Math.log(scale[i]);
+			}
+			
+			logli += seq_logli;
+			
+			for (int i = 0; i < featureSize; i++) {
+				gravity[i] -= ExpF[i] / Zx;
+			}
+		}
+		
+		// 因为要求最小值，将L与G反转
+		logli *= -1.0;
+		for (int i = 0; i < gravity.length; i++) {
+			gravity[i] *= -1.0;
+		}
+		
+		return logli;
 	}
 }

@@ -3,6 +3,8 @@
  */
 package inference;
 
+import gcrfs.Model;
+
 import java.io.Serializable;
 
 import type.FeatureSet;
@@ -28,4 +30,6 @@ public abstract class Inference implements Serializable{
 			this.score = score;
 		}
 	}
+	
+	public abstract double computeGravity(Model model, double[] lambda, double[] gravity, int iter);
 }

@@ -67,7 +67,7 @@ public class TreeTemplate extends AbstractTemplate {
 			}
 			
 			//!!! parent == -1
-			if (parent >= 0) {
+			if (parent != Graph.ROOT) {
 				String preLString = timestampSequence.get(parent).getLabel();
 				if (create) {
 					Feature feature = featureSet.putAndGetFeature("TRANS", preLString, lString, Feature.TYPE_EDGE);
