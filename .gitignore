@@ -10,3 +10,8 @@
 *.raw
 *.gz
 *.tagged
+
+# Config Files #
+.settings
+.project
+.classpath

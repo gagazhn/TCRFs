@@ -114,7 +114,7 @@ public class Model implements Serializable {
 				Evaluation eval = new Evaluation(mFeatureSet, mLabelSet);
 				
 				for (Instance instance : mTestInsList) {
-					Path path = mInference.exec(instance, mFeatureSet, mLabelSet);
+					Path path = mInference.exec(this, instance, mFeatureSet, mLabelSet);
 					for (int t = 0; t < path.path.length; t++) {
 						String lString = instance.getTimestampSequence().get(t).getLabel();
 						int labelIndex = mLabelSet.labelIndex(lString);
@@ -139,7 +139,7 @@ public class Model implements Serializable {
 		
 		Evaluation eval = new Evaluation(mFeatureSet, mLabelSet);
 		for (Instance instance : instanceList) {
-			Path path = mInference.exec(instance, mFeatureSet, mLabelSet);
+			Path path = mInference.exec(this, instance, mFeatureSet, mLabelSet);
 			
 			for (int i = 0; i < path.path.length; i++) {
 				String lString = instance.getTimestampSequence().get(i).getLabel();
@@ -287,10 +287,6 @@ public class Model implements Serializable {
 		return L;
 	}
 	 */
-	
-	
-	
-	
 	
 	public void compute_log_Mi(Instance instance, int t, double[][] Mi, double[] Vi, boolean E) {
 		int labelSize = mLabelSet.getLabelSize();

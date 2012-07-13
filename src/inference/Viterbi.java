@@ -27,7 +27,7 @@ import util.Matrix;
  * @author gagazhn
  */
 public class Viterbi extends Inference {
-	public Path exec(Instance instance, FeatureSet featureSet,
+	public Path exec(Model model, Instance instance, FeatureSet featureSet,
 			LabelSet labelSet) {
 		double[] lambda = featureSet.getLambda();
 		int labelSize = labelSet.getLabelSize();

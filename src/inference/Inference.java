@@ -19,9 +19,11 @@ import type.LabelSet;
 public abstract class Inference implements Serializable{
 	private static final long serialVersionUID = -3536997894514191700L;
 
-	public abstract Path exec(Instance instance, FeatureSet feautureSet, LabelSet labelSet);
+	public abstract Path exec(Model model, Instance instance, FeatureSet feautureSet, LabelSet labelSet);
 	
-	public class Path {
+	public abstract double computeGravity(Model model, double[] lambda, double[] gravity, int iter);
+	
+	public static class Path {
 		public int[] path;
 		public double score;
 		
@@ -30,6 +32,4 @@ public abstract class Inference implements Serializable{
 			this.score = score;
 		}
 	}
-	
-	public abstract double computeGravity(Model model, double[] lambda, double[] gravity, int iter);
 }
