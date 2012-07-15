@@ -25,6 +25,7 @@ public class RawToData {
 //			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./testG.data"), "UTF-8");
 			StringBuilder instance = new StringBuilder();
 			boolean isOp = false;
+			String[] preLines = null;
 			while (scanner.hasNextLine()) {
 				String line = scanner.nextLine();
 //				System.out.println(line);
@@ -53,6 +54,8 @@ public class RawToData {
 //					System.out.println(sb.toString());
 					instance.append(sb.toString() + "\r\n");
 //					ow.write(sb.toString() + "\r\n");
+					
+					preLines = lines;
 				} else {
 //					System.out.println();
 					if (isOp) {
@@ -63,6 +66,8 @@ public class RawToData {
 					} else {
 						instance = new StringBuilder();
 					}
+					
+					preLines = null;
 				}
 			}
 			

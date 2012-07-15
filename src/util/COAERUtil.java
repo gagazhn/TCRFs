@@ -23,9 +23,26 @@ public class COAERUtil {
 	public static void main(String[] args) {
 		// TODO Auto-generated method stub
 		try {
-			Scanner scanner = new Scanner(new InputStreamReader(new FileInputStream("task3.data"), "GBK"));
+			Scanner scanner = new Scanner(new InputStreamReader(new FileInputStream("task3.clear.data"), "UTF-8"));
 			while (scanner.hasNextLine()) {
 				String line = scanner.nextLine();
+				String[] elements = line.split("\t");
+				if (elements.length < 3) {
+					continue;
+				}
+				
+				String sent = elements[1];
+				for (int i = 2; i < elements.length - 1; i += 3) {
+					if (i + 2 >= elements.length) {
+						System.out.println(line);
+					}
+					String attr = elements[i];
+					String op = elements[i + 1];
+					String polary = elements[i + 2];
+					
+					System.out.println(polary);
+				}
+//				System.out.println(line);
 			}
 		} catch (Exception e) {
 			e.printStackTrace();

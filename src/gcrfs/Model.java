@@ -143,7 +143,12 @@ public class Model implements Serializable {
 			
 			for (int i = 0; i < path.path.length; i++) {
 				String lString = instance.getTimestampSequence().get(i).getLabel();
-				String fString = instance.getTimestampSequence().get(i).getFeatures().toString();
+				ArrayList<String> q = instance.getTimestampSequence().get(i).getFeatures();
+				String fString = "{";
+				for (int j = 0; j < q.size() && j < 4; j++) {
+					fString = fString + q.get(j);
+				}
+				fString = fString + "}";
 				int labelIndex = mLabelSet.labelIndex(lString);
 				Label label = mLabelSet.labelByIndex(path.path[i]);
 				eval.statstic(labelIndex, path.path[i]);
