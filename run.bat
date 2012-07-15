@@ -1,1 +1,0 @@
-java -cp $BASEDIR/bin lang.TreeCRFTui 

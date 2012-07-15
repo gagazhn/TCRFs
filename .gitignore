@@ -10,6 +10,7 @@
 *.raw
 *.gz
 *.tagged
+*.tgr
 
 # Config Files #
 .settings
