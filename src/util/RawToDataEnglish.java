@@ -12,15 +12,17 @@ import java.util.Scanner;
  * @author gagazhn
  *
  */
-public class RawToData {
+public class RawToDataEnglish {
 
 	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
 		try {
-			Scanner scanner = new Scanner(new FileInputStream("./train.G.raw"));
-			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./train.G.data"), "UTF-8");
+			Scanner scanner = new Scanner(new FileInputStream("./liu.G.raw"));
+			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./liu.G.data"), "UTF-8");
+//			Scanner scanner = new Scanner(new FileInputStream("./testG.data.raw"));
+//			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./testG.data"), "UTF-8");
 //			Scanner scanner = new Scanner(new FileInputStream("./testG.data.raw"));
 //			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./testG.data"), "UTF-8");
 			StringBuilder instance = new StringBuilder();
@@ -28,6 +30,7 @@ public class RawToData {
 			String[] preLines = null;
 			while (scanner.hasNextLine()) {
 				String line = scanner.nextLine();
+				System.out.println(line);
 //				System.out.println(line);
 				if (!line.equals("")) {
 					String[] lines = line.split(" --- ");
@@ -48,9 +51,7 @@ public class RawToData {
 					sb.append("POS:" + elements[2] + " ");
 					sb.append("PPOS:" + elements[3] + " ");
 					sb.append("DPPOS:" + "[" + elements[2] + "|" + elements[6] + "] ");
-					sb.append("#" + elements[4] + " ");
-					sb.append(elements[7] + " ");
-					sb.append(elements[8]);
+					sb.append("#" + elements[4]);
 //					System.out.println(sb.toString());
 					instance.append(sb.toString() + "\r\n");
 //					ow.write(sb.toString() + "\r\n");

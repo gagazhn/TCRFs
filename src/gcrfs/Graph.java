@@ -46,7 +46,9 @@ public class Graph {
 			nodes.put(parent, parentNode);
 		}
 		
-		parentNode.children.add(t);
+		if ( parent != t) {
+			parentNode.children.add(t);
+		}
 	}
 	
 	public int parent(int t) {

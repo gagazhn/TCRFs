@@ -7,6 +7,7 @@
  */
 package gcrfs;
 
+import gagazhn.time.Statistic;
 import inference.Inference;
 import inference.Inference.Path;
 
@@ -109,6 +110,7 @@ public class Model implements Serializable {
 					break;
 				}
 				
+				System.err.println("update...");
 				
 				// 训练过程中进行评测
 				Evaluation eval = new Evaluation(mFeatureSet, mLabelSet);

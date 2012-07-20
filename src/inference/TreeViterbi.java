@@ -7,6 +7,7 @@
  */
 package inference;
 
+import gagazhn.time.Statistic;
 import gcrfs.Graph;
 import gcrfs.Model;
 
@@ -82,9 +83,8 @@ public class TreeViterbi extends Inference {
 		
 		LinkedList<Integer> queue = new LinkedList<Integer>();
 		for (int t = 0; t < length; t++	) {
-			if (graph.isLeaf(t)) {
+			if (graph.isLeaf(t) && graph.parent(t) != t) {
 				queue.addFirst(t);
-				
 			}
 		}
 		
@@ -184,7 +184,12 @@ public class TreeViterbi extends Inference {
 			logli -= lambda[i] * lambda[i] / (2 * Model.SIGMA * Model.SIGMA);
 		}
 		
+//		System.out.println("TIME START");
 		for (Instance instance : model.trainInstances()) {
+			//!!
+//			Statistic.start("TOTAL");
+//			Statistic.start("INIT");
+			
 			Graph graph = instance.graph;
 			int length = instance.getTimestampSequence().size();
 			
@@ -197,8 +202,13 @@ public class TreeViterbi extends Inference {
 				ExpF[i] = 0;
 			}
 			
+			//!!
+//			Statistic.note(false, "INIT");
+//			Statistic.start("BACK");
+			
 			// backward
 			LinkedList<Integer> queue = new LinkedList<Integer>();
+			LinkedList<Integer> isolation = new LinkedList<Integer>();
 			for (int t = 0; t < length; t++) {
 				if (graph.isLeaf(t) && graph.parent(t) != t) {
 					queue.add(t);
@@ -209,6 +219,10 @@ public class TreeViterbi extends Inference {
 					scale[t] = labelSize;
 					Matrix.scale(beta[t], scale[t]);
 				}
+				
+				if (graph.isLeaf(t) && graph.parent(t) == t) {
+					isolation.add(t);
+				}
 			}
 			
 			short[] betaFlag = new short[length];
@@ -216,7 +230,6 @@ public class TreeViterbi extends Inference {
 				int t = queue.removeFirst();
 				int parent = graph.parent(t);
 				
-				// 当整句只有一个词时
 				if (parent == Graph.ROOT) {
 					continue;
 				}
@@ -225,7 +238,7 @@ public class TreeViterbi extends Inference {
 				double[] temp = Matrix.copy(beta[t]);
 				Matrix.mult(temp, Vi);
 				Matrix.matric_mult(labelSize, temp, Mi, Matrix.copy(temp), false);
-//				add(beta[parent], beta[parent], temp);
+				
 				if (betaFlag[parent] == 0) {
 					beta[parent] = temp;
 				} else {
@@ -242,103 +255,129 @@ public class TreeViterbi extends Inference {
 					}
 
 					// scale
-					assert false;
 					scale[parent] = Matrix.sum(beta[parent]);
 					Matrix.scale(beta[parent], scale[parent]);
 				}
 			}
 			
+			//!!
+//			Statistic.note(false, "BACK");
+//			Statistic.start("FORW");
+			
 			// forward
 			double seq_logli = 0;
 			queue.clear();
-			queue.add(graph.childrenList(Graph.ROOT).get(0));
-			while(!queue.isEmpty()) {
-				int t = queue.removeFirst();
-				int parent = graph.parent(t);
-				
-				for (int child : graph.childrenList(t)) {
-					queue.addLast(child);
-				}
-				
-				// 3种情况：
-				// 1：根
-				// 2：t节点为交点的子节点
-				// 3：普通
-				if (parent == Graph.ROOT) {
-					model.compute_log_Mi(instance, t, Mi, Vi, true);
-					nextAlpha = Matrix.copy(Vi);
-				} else if (graph.isCross(parent)) {
-					nextAlpha = Matrix.initVector(labelSize, 1);
-					for (int child : graph.childrenList(parent)) {
-						if (child == t) {
-							continue;
-						}
-						
-						model.compute_log_Mi(instance, child, Mi, Vi, true);
-						double[] temp = Matrix.copy(beta[child]);
-						Matrix.mult(temp, Vi);
-						Matrix.matric_mult(labelSize, temp, Mi, Matrix.copy(temp), false);
-						
-						Matrix.mult(nextAlpha, temp);
-//						add(nextAlpha, nextAlpha, temp);
+			
+			// 计算上孤立点
+			nextAlpha = Matrix.initVector(labelSize, 1);
+			for (int iso : isolation) {
+				model.compute_log_Mi(instance, iso, Mi, Vi, true);
+				Matrix.mult(nextAlpha, Vi);
+			}
+			double[] lastAlpha = nextAlpha;
+			
+			int root = 0;
+			if (graph.childrenList(Graph.ROOT).size() > 0) {
+				root = graph.childrenList(Graph.ROOT).get(0);
+
+				queue.add(root);
+				while (!queue.isEmpty()) {
+					int t = queue.removeFirst();
+					int parent = graph.parent(t);
+
+					for (int child : graph.childrenList(t)) {
+						queue.addLast(child);
 					}
-					Matrix.mult(nextAlpha, alpha[parent]);
-					
-					preAlpha = Matrix.copy(nextAlpha);
-					
-					model.compute_log_Mi(instance, t, Mi, Vi, true);
-					Matrix.matric_mult(labelSize, nextAlpha, Mi, Matrix.copy(nextAlpha), true);
-					Matrix.mult(nextAlpha, Vi);
-				} else {
-					model.compute_log_Mi(instance, t, Mi, Vi, true);
-					preAlpha = alpha[parent];
-					Matrix.matric_mult(labelSize, nextAlpha, Mi, alpha[parent], true);
-					Matrix.mult(nextAlpha, Vi);
-				}
-				
-				for (Feature feature : instance.getFeatureSequence().get(t)) {
-					String fString = feature.getValue();
-					
-					gravity[feature.getIndex()]++;
-					seq_logli += lambda[feature.getIndex()];
-					
-					if (feature.type == Feature.TYPE_STATE) {
-						for (int i = 0; i < labelSize; i++) {
-//							String preLString = mLabelSet.labelByIndex(i).value();
-							String lString = model.labels().labelByIndex(i).value();
-							
-							Feature f = model.features().lookupFeature(fString, null, lString);
-							if (f != null) {
-									ExpF[f.getIndex()] += nextAlpha[i] * beta[t][i];
+
+					// 3种情况：
+					// 1：根
+					// 2：t节点为交点的子节点
+					// 3：普通
+					if (parent == Graph.ROOT) {
+						model.compute_log_Mi(instance, t, Mi, Vi, true);
+						Matrix.mult(nextAlpha, Vi);
+					} else if (graph.isCross(parent)) {
+						nextAlpha = Matrix.initVector(labelSize, 1);
+						for (int child : graph.childrenList(parent)) {
+							if (child == t) {
+								continue;
 							}
+
+							model.compute_log_Mi(instance, child, Mi, Vi, true);
+							double[] temp = Matrix.copy(beta[child]);
+							Matrix.mult(temp, Vi);
+							Matrix.matric_mult(labelSize, temp, Mi, Matrix.copy(temp), false);
+
+							Matrix.mult(nextAlpha, temp);
+							// add(nextAlpha, nextAlpha, temp);
 						}
-					} else if (feature.type == Feature.TYPE_EDGE) {
-						for (int i = 0; i < labelSize; i++) {
-							for (int j = 0; j < labelSize; j++) {
-								String preLString = model.labels().labelByIndex(j).value();
+						Matrix.mult(nextAlpha, alpha[parent]);
+
+						preAlpha = Matrix.copy(nextAlpha);
+
+						model.compute_log_Mi(instance, t, Mi, Vi, true);
+						Matrix.matric_mult(labelSize, nextAlpha, Mi, Matrix.copy(nextAlpha), true);
+						Matrix.mult(nextAlpha, Vi);
+					} else {
+						model.compute_log_Mi(instance, t, Mi, Vi, true);
+						preAlpha = alpha[parent];
+						Matrix.matric_mult(labelSize, nextAlpha, Mi, alpha[parent], true);
+						Matrix.mult(nextAlpha, Vi);
+					}
+
+					for (Feature feature : instance.getFeatureSequence().get(t)) {
+						String fString = feature.getValue();
+
+						gravity[feature.getIndex()]++;
+						seq_logli += lambda[feature.getIndex()];
+
+						if (feature.type == Feature.TYPE_STATE) {
+							for (int i = 0; i < labelSize; i++) {
+								// String preLString =
+								// mLabelSet.labelByIndex(i).value();
 								String lString = model.labels().labelByIndex(i).value();
-								
-								Feature f = model.features().lookupFeature(fString, preLString, lString);
+
+								Feature f = model.features().lookupFeature(fString, null, lString);
 								if (f != null) {
-									ExpF[f.getIndex()] += preAlpha[j] * Vi[i] * Mi[j][i] * beta[t][i];
+									ExpF[f.getIndex()] += nextAlpha[i]
+											* beta[t][i];
+								}
+							}
+						} else if (feature.type == Feature.TYPE_EDGE) {
+							for (int i = 0; i < labelSize; i++) {
+								for (int j = 0; j < labelSize; j++) {
+									String preLString = model.labels().labelByIndex(j).value();
+									String lString = model.labels().labelByIndex(i).value();
+
+									Feature f = model.features().lookupFeature(fString, preLString, lString);
+									if (f != null) {
+										ExpF[f.getIndex()] += preAlpha[j]
+												* Vi[i] * Mi[j][i] * beta[t][i];
+									}
 								}
 							}
 						}
 					}
+
+					// scale
+					alpha[t] = Matrix.copy(nextAlpha);
+					Matrix.scale(alpha[t], scale[t]);
+					lastAlpha = alpha[t];
 				}
-				
-				alpha[t] = Matrix.copy(nextAlpha);
-				// scale
-				Matrix.scale(alpha[t], scale[t]);
 			}
 			
-			int root = graph.childrenList(Graph.ROOT).get(0);
-			model.compute_log_Mi(instance, root, Mi, Vi, true);
-			Matrix.mult(beta[root], Vi);
-			double Zx = Matrix.sum(beta[root]);
+			//!!
+//			Statistic.note(false, "FORW");
+			
+			
+			double Zx = Matrix.sum(lastAlpha);
 			
 			seq_logli -= Math.log(Zx);
 			
+//			if (Double.isNaN(seq_logli)) {
+//				System.out.println("SSSSSSSSSS");
+//				System.exit(0);
+//			}
 			// scale
 			for (int i = 0; i < length; i++) {
 				if (scale[i] != 0) {
@@ -351,6 +390,9 @@ public class TreeViterbi extends Inference {
 			for (int i = 0; i < featureSize; i++) {
 				gravity[i] -= ExpF[i] / Zx;
 			}
+			
+			//!!
+//			Statistic.note(false, "TOTAL");
 		}
 		
 		// 因为要求最小值，将L与G反转
@@ -358,6 +400,12 @@ public class TreeViterbi extends Inference {
 		for (int i = 0; i < gravity.length; i++) {
 			gravity[i] *= -1.0;
 		}
+		
+		//!!
+//		System.out.println(Statistic.getTime("TOTAL"));
+//		System.out.println(Statistic.getTime("INIT"));
+//		System.out.println(Statistic.getTime("BACK"));
+//		System.out.println(Statistic.getTime("FORW"));
 		
 		return logli;
 	}

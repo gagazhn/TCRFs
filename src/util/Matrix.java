@@ -12,9 +12,9 @@ public class Matrix {
 		for (int i = 0; i < x.length; i++) {
 			x[i] = x[i] * y[i];
 			
-			if (x[i] == 0) {
-				System.out.println("hehe");
-			}
+//			if (x[i] == 0) {
+//				System.out.println("hehe");
+//			}
 		}
 	}
 	
