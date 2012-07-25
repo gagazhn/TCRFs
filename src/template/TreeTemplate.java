@@ -37,7 +37,7 @@ public class TreeTemplate extends AbstractTemplate {
 			String lString = timestamp.getLabel();
 			for (String fString : timestamp.getFeatures()) {
 				if (fString.startsWith("//")) {
-					
+					continue;
 				} else if (fString.startsWith("#") && parent != t) {
 					if (parent < 0) {
 						continue;
@@ -53,7 +53,7 @@ public class TreeTemplate extends AbstractTemplate {
 							featureVector.add(feature);
 						}
 					}
-				} else {
+				} else if (!fString.startsWith("#")) {
 					if (create) {
 						Feature feature = featureSet.putAndGetFeature(fString, null, lString, Feature.TYPE_STATE);
 						featureVector.add(feature);
@@ -67,7 +67,7 @@ public class TreeTemplate extends AbstractTemplate {
 			}
 			
 			//!!! parent == -1
-			if (parent != Graph.ROOT) {
+			if (parent != Graph.ROOT && parent != t) {
 				String preLString = timestampSequence.get(parent).getLabel();
 				if (create) {
 					Feature feature = featureSet.putAndGetFeature("TRANS", preLString, lString, Feature.TYPE_EDGE);

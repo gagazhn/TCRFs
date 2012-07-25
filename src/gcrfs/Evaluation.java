@@ -25,10 +25,14 @@ public class Evaluation {
 	private int[] mPredict;
 	private int[] mHit;
 	
+	private boolean exactly;
 	
-	public Evaluation(FeatureSet featureSet, LabelSet labelSet) {
+	
+	public Evaluation(FeatureSet featureSet, LabelSet labelSet, boolean exactly) {
 		mFeatureSet = featureSet;
 		mLabelSet = labelSet;
+		
+		this.exactly = exactly;
 		
 		mLabelSize = mLabelSet.getLabelSize();
 		mRaw = new int[mLabelSize];
@@ -38,12 +42,58 @@ public class Evaluation {
 		df = new DecimalFormat("##.00%");
 	}
 	
-	public void statstic(int rawLabel, int predictLabel) {
+/*	public void statstic(int rawLabel, int predictLabel) {
 		mRaw[rawLabel]++;
 		mPredict[predictLabel]++;
 		
 		if (rawLabel == predictLabel) {
 			mHit[predictLabel]++;
+		}
+	}*/
+	
+	public void staticic(int[] answer, int[] guess) {
+		if (answer.length != guess.length) {
+			System.err.println("answer's size != guess's size");
+			System.exit(0);
+		}
+		
+		if (exactly) {
+			int answerHead = -1;
+			int guessHead = -1;
+			int a = -1;
+			int b = -1;
+			for (int t = 0; t < answer.length; t++) {
+				if (t == 0 || answer[t - 1] != answer[t]) {
+					answerHead = t;
+				}
+				
+				if (t == 0 || guess[t - 1] != guess[t]) {
+					guessHead = t;
+				}
+				
+				if (t >= answer.length - 1 || answer[t + 1] != answer[t]) {
+					mRaw[answer[t]]++;
+					a = answer[t];
+				}
+				
+				if (t >= answer.length - 1 || guess[t + 1] != guess[t] ) {
+					mPredict[guess[t]]++;
+					b = guess[t];
+				}
+				
+				if ((t >= answer.length - 1 || answer[t + 1] != answer[t]) && answerHead == guessHead && a == b) {
+					mHit[answer[t]]++;
+				}
+			}
+		} else {
+			for (int t = 0; t < answer.length; t++) {
+				mRaw[answer[t]]++;
+				mPredict[guess[t]]++;
+				
+				if (answer[t] == guess[t]) {
+					mHit[answer[t]]++;
+				}	
+			}
 		}
 	}
 	

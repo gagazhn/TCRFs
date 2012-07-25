@@ -1,7 +1,7 @@
 /**
  * 
  */
-package util;
+package tools;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;

@@ -17,7 +17,9 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import gcrfs.Model;
+import template.BaselineTemplate;
 import template.ChainTemplate;
+import template.LogTemplate;
 import template.TemplateQueue;
 import template.TreeTemplate;
 import type.InstanceList;
@@ -73,14 +75,7 @@ public class TreeCRFTui {
 			}
 		}
 		
-//		InstanceList instanceList = InstanceReader.read("trainG.data");
-//		InstanceList instanceList = InstanceReader.read("train.data");
-		
-//		InstanceList instanceList2 = InstanceReader.read("testG.data");
-//		InstanceList instanceList2 = InstanceReader.read("test.data");
-		
 //		String file = "./model.G.ser.gz";
-//		String file = "./model.ser.gz";
 		Model model = null;
 		if ("--train".equals(cmd)) {
 			InstanceList instanceList = InstanceReader.read(trainPath, encoding);
@@ -95,13 +90,19 @@ public class TreeCRFTui {
 			} else if (type.equals("tree")) {
 				q.add(new TreeTemplate());
 				inference = new TreeViterbi();
+			} else if (type.equals("log")) {
+				q.add(new LogTemplate());
+				inference = new Viterbi();
+			} else if (type.equals("baseline")) {
+				q.add(new BaselineTemplate());
+				inference = new Viterbi();
 			} else {
 				System.err.println("Only chain or tree be supported. Abort...");
 				System.exit(1);
 			}
 			
 			model = new Model(instanceList, instanceList2, q, inference);
-			model.train(200);
+			model.train(150);
 			writeGzippedObject(new File(modelPath), model);
 			System.err.println("Model saved!");
 			

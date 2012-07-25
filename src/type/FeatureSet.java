@@ -8,7 +8,7 @@ import java.util.Random;
 /**
  * 特征/函数 字典。所有编译的特征都会被记录在字典中。在训练阶段，通过提供
  * 	fString来编译特征，且特征只能在训练阶段被记录，在测试阶段中只能在字典
- * 	中进行查询。另外权重数组lambda[i]被保存中字典中。
+ * 	中进行查询。另外权重数组lambda[i]被保存在字典中。
  *
  */
 public class FeatureSet implements Serializable {
@@ -109,24 +109,57 @@ public class FeatureSet implements Serializable {
 		return mLambda;
 	}
 	
+	// 压缩特征
 	public void tight(InstanceList instanceList) {
 		HashMap<String, Feature> tempM = new HashMap<String, Feature>();
 		ArrayList<Feature> tempL = new ArrayList<Feature>();
 		
-		int threshold = 2;
-		int index = 0;
+		int threshold = 4;
+		mSeek = 0;
+		int labelSize = mLabelSet.getLabelSize();
 		
 		for (Feature feature : mList) {
 			String fString = feature.getValue();
 			String preLString = feature.getPreLabel() == null ? null : feature.getPreLabel().value();
 			String lString = feature.getLabel().value();
 			
-			if (feature.getFreq() >= threshold) {
-				tempL.add(feature);
-				tempM.put(query(fString, preLString, lString), feature);
-				feature.index = index++;
+			if (feature.type == Feature.TYPE_EDGE) {
+				int fre = 0;
+				for (int i = 0; i < labelSize; i++) {
+					for (int j = 0; j < labelSize; j++) {
+						String labelString = mLabelSet.labelByIndex(i).value();
+						String preLabelString = mLabelSet.labelByIndex(j).value();
+						Feature f = lookupFeature(fString, preLabelString, labelString);
+						if (f != null) {
+							fre += f.getFreq();
+						}
+					}
+				}
+				
+				if (fre >= threshold) {
+					tempL.add(feature);
+					tempM.put(query(fString, preLString, lString), feature);
+					feature.index = mSeek++;
+				} else {
+					feature.index = -1;
+				}
 			} else {
-				feature.index = -1;
+				int fre = 0;
+				for (int i = 0; i < labelSize; i++) {
+					String labelString = mLabelSet.labelByIndex(i).value();
+					Feature f = lookupFeature(fString, null, labelString);
+					if (f != null) {
+						fre += f.getFreq();
+					}
+				}
+				
+				if (fre >= threshold) {
+					tempL.add(feature);
+					tempM.put(query(fString, preLString, lString), feature);
+					feature.index = mSeek++;
+				} else {
+					feature.index = -1;
+				}
 			}
 		}
 		

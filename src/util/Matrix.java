@@ -18,6 +18,12 @@ public class Matrix {
 		}
 	}
 	
+	public static void fileWith(double[] x, double val) {
+		for (int i = 0; i < x.length; i++) {
+			x[i] = val;
+		}
+	}
+	
 	public static void matric_mult(int size, double[] x, double[][] A, double[] y, boolean T) {
 		// for beta
 		if (!T) {
@@ -59,7 +65,7 @@ public class Matrix {
 		return copy;
 	}
 	
-	public static double[] initVector(int n, int value) {
+	public static double[] initVector(int n, double value) {
 		double[] vector = new double[n];
 		for (int i = 0; i < n; i++) {
 			vector[i] = value;

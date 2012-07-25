@@ -13,11 +13,8 @@ public class Main {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-//		TreeCRFTui.main("--train chain model.test.ser.gz utf-8 train.G.data test.G.data".split(" "));
-		TreeCRFTui.main("--train tree model.test.G.ser.gz utf-8 train.G.data test.G.data".split(" "));
-//		TreeCRFTui.main("--train tree model.test.G.ser.gz utf-8 trainG.data testG.data".split(" "));
-//		TreeCRFTui.main("--train tree model.liu.test.G.ser.gz utf-8 liu.G.train.data liu.G.test.data".split(" "));
-//		TreeCRFTui.main("--test model.test.G.ser.gz utf-8 testG.data".split(" "));
+//		TreeCRFTui.main("--train tree ./output/model.hit.G.ser.gz utf-8 ./data/train.G.data ./data/test.G.data".split(" "));
+		TreeCRFTui.main("--test ./output/model.COAE.tree.ser.gz utf-8 ./data/~.data".split(" "));
 	}
 
 }

@@ -88,10 +88,10 @@ public class TreeViterbi extends Inference {
 			}
 		}
 		
-		int t = 0;
+		int t = -2;
 		short[] count = new short[length];
 		while (!queue.isEmpty()) {
-			t = queue.removeLast();
+			t = queue.removeFirst();
 			int parent = graph.parent(t);
 			
 			if (graph.isLeaf(t)) {
@@ -138,27 +138,31 @@ public class TreeViterbi extends Inference {
 			}
 		}
 		
-		int label = 0;
-		double maxP = 0;
-		for (int i = 0; i < labelSize; i++) {
-			if (maxP < beta[t][i]) {
-				maxP = beta[t][i];
-				label = i;
+		if (t != -2) {
+			int label = 0;
+			double maxP = 0;
+			for (int i = 0; i < labelSize; i++) {
+				if (maxP < beta[t][i]) {
+					maxP = beta[t][i];
+					label = i;
+				}
 			}
-		}
-		
-		finalPath[t] = label;
-		queue.clear();
-		queue.add(t);
-		while (!queue.isEmpty()) {
-			t = queue.removeFirst();
-			label = finalPath[t];
 			
-			for (int child : graph.childrenList(t)) {
-				queue.addLast(child);
+			finalPath[t] = label;
+			queue.clear();
+			queue.add(t);
+			while (!queue.isEmpty()) {
+				t = queue.removeFirst();
+				label = finalPath[t];
 				
-				finalPath[child] = mPath[child][label];
+				for (int child : graph.childrenList(t)) {
+					queue.addLast(child);
+					
+					finalPath[child] = mPath[child][label];
+				}
 			}
+		} else {
+			
 		}
 		
 		return new Path(finalPath, finalScore);
@@ -184,8 +188,8 @@ public class TreeViterbi extends Inference {
 			logli -= lambda[i] * lambda[i] / (2 * Model.SIGMA * Model.SIGMA);
 		}
 		
-//		System.out.println("TIME START");
 		for (Instance instance : model.trainInstances()) {
+			
 			//!!
 //			Statistic.start("TOTAL");
 //			Statistic.start("INIT");
@@ -268,14 +272,8 @@ public class TreeViterbi extends Inference {
 			double seq_logli = 0;
 			queue.clear();
 			
-			// 计算上孤立点
-			nextAlpha = Matrix.initVector(labelSize, 1);
-			for (int iso : isolation) {
-				model.compute_log_Mi(instance, iso, Mi, Vi, true);
-				Matrix.mult(nextAlpha, Vi);
-			}
-			double[] lastAlpha = nextAlpha;
-			
+			Matrix.fileWith(nextAlpha, 1);
+			double[] lastAlpha = null;
 			int root = 0;
 			if (graph.childrenList(Graph.ROOT).size() > 0) {
 				root = graph.childrenList(Graph.ROOT).get(0);
@@ -309,10 +307,9 @@ public class TreeViterbi extends Inference {
 							Matrix.matric_mult(labelSize, temp, Mi, Matrix.copy(temp), false);
 
 							Matrix.mult(nextAlpha, temp);
-							// add(nextAlpha, nextAlpha, temp);
 						}
+						
 						Matrix.mult(nextAlpha, alpha[parent]);
-
 						preAlpha = Matrix.copy(nextAlpha);
 
 						model.compute_log_Mi(instance, t, Mi, Vi, true);
@@ -324,6 +321,7 @@ public class TreeViterbi extends Inference {
 						Matrix.matric_mult(labelSize, nextAlpha, Mi, alpha[parent], true);
 						Matrix.mult(nextAlpha, Vi);
 					}
+
 
 					for (Feature feature : instance.getFeatureSequence().get(t)) {
 						String fString = feature.getValue();
@@ -364,35 +362,40 @@ public class TreeViterbi extends Inference {
 					Matrix.scale(alpha[t], scale[t]);
 					lastAlpha = alpha[t];
 				}
-			}
-			
-			//!!
-//			Statistic.note(false, "FORW");
-			
-			
-			double Zx = Matrix.sum(lastAlpha);
-			
-			seq_logli -= Math.log(Zx);
-			
-//			if (Double.isNaN(seq_logli)) {
-//				System.out.println("SSSSSSSSSS");
-//				System.exit(0);
-//			}
-			// scale
-			for (int i = 0; i < length; i++) {
-				if (scale[i] != 0) {
-					seq_logli -= Math.log(scale[i]);
+				
+				//!!
+//				Statistic.note(false, "FORW");
+				
+				double Zx = Matrix.sum(lastAlpha);
+				
+				seq_logli -= Math.log(Zx);
+				
+				// scale
+				for (int i = 0; i < length; i++) {
+					if (scale[i] != 0) {
+						seq_logli -= Math.log(scale[i]);
+					}
 				}
+				
+				logli += seq_logli;
+				
+				for (int i = 0; i < featureSize; i++) {
+					gravity[i] -= ExpF[i] / Zx;
+				}
+				
+				//!!
+//				Statistic.note(false, "TOTAL");
+			} else {
+				// instance只有孤立点时
+				// 计算上孤立点
+//				double[] isoAlpha = Matrix.initVector(labelSize, 1);
+//				for (int iso : isolation) {
+//					model.compute_log_Mi(instance, iso, Mi, Vi, true);
+//					Matrix.mult(isoAlpha, Vi);
+//				}
+				
 			}
-			
-			logli += seq_logli;
-			
-			for (int i = 0; i < featureSize; i++) {
-				gravity[i] -= ExpF[i] / Zx;
-			}
-			
-			//!!
-//			Statistic.note(false, "TOTAL");
+
 		}
 		
 		// 因为要求最小值，将L与G反转

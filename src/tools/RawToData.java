@@ -1,7 +1,7 @@
 /**
  * 
  */
-package util;
+package tools;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -19,10 +19,8 @@ public class RawToData {
 	 */
 	public static void main(String[] args) {
 		try {
-			Scanner scanner = new Scanner(new FileInputStream("./train.G.raw"));
-			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./train.G.data"), "UTF-8");
-//			Scanner scanner = new Scanner(new FileInputStream("./testG.data.raw"));
-//			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./testG.data"), "UTF-8");
+			Scanner scanner = new Scanner(new FileInputStream("./data/COAE.digital.raw"));
+			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./data/COAE.digital.data"), "UTF-8");
 			StringBuilder instance = new StringBuilder();
 			boolean isOp = false;
 			String[] preLines = null;
@@ -42,10 +40,11 @@ public class RawToData {
 					
 					sb.append(lines[0] + " --- " + lines[1] + " --- ");
 					
+					sb.append("W:" + elements[0] + " ");
 					sb.append("#W:" + elements[0] + " ");
 					sb.append("WW:" + "[" + elements[1] + "] ");
-					sb.append("DWW:" + "[" + elements[0] + "|" + elements[5] + "] ");
-					sb.append("POS:" + elements[2] + " ");
+					sb.append("#DWW:" + "[" + elements[0] + "|" + elements[5] + "] ");
+					sb.append("#POS:" + elements[2] + " ");
 					sb.append("PPOS:" + elements[3] + " ");
 					sb.append("DPPOS:" + "[" + elements[2] + "|" + elements[6] + "] ");
 					sb.append("#" + elements[4] + " ");

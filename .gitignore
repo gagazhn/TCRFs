@@ -11,8 +11,12 @@
 *.gz
 *.tagged
 *.tgr
+*.out
 
 # Config Files #
 .settings
 .project
 .classpath
+
+# output #
+output
