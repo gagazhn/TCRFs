@@ -114,7 +114,7 @@ public class FeatureSet implements Serializable {
 		HashMap<String, Feature> tempM = new HashMap<String, Feature>();
 		ArrayList<Feature> tempL = new ArrayList<Feature>();
 		
-		int threshold = 4;
+		int threshold = 6;
 		mSeek = 0;
 		int labelSize = mLabelSet.getLabelSize();
 		

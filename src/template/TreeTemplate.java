@@ -43,6 +43,10 @@ public class TreeTemplate extends AbstractTemplate {
 						continue;
 					}
 					
+					//!!
+					if (timestampSequence.size() <= parent) {
+						System.out.println("hehe");
+					}
 					String preLString = timestampSequence.get(parent).getLabel();
 					if (create) {
 						Feature feature = featureSet.putAndGetFeature(fString, preLString, lString, Feature.TYPE_EDGE);

@@ -40,6 +40,7 @@ public class LabelSet implements Serializable {
 			mList.add(label);
 		}
 		
+		label.addFreq();
 		return label;
 	}
 	

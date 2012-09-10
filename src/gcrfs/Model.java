@@ -144,7 +144,7 @@ public class Model implements Serializable {
 	public void test(InstanceList instanceList, int outputType) {
 		mTemplateQueue.compile(instanceList, mFeatureSet, mLabelSet, false);
 		
-		Evaluation eval = new Evaluation(mFeatureSet, mLabelSet, false);
+		Evaluation eval = new Evaluation(mFeatureSet, mLabelSet, true);
 		for (Instance instance : instanceList) {
 			Path path = mInference.exec(this, instance, mFeatureSet, mLabelSet);
 			int[] answer = new int[path.path.length];

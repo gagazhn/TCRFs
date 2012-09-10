@@ -40,4 +40,8 @@ public class Label implements Serializable {
 	public int getIndex() {
 		return index;
 	}
+	
+	public String toString() {
+		return value + ":" + freq;
+	}
 }

@@ -19,7 +19,9 @@ public class RawToData {
 	 */
 	public static void main(String[] args) {
 		try {
+//			Scanner scanner = new Scanner(new FileInputStream("./data/HIT.raw"));
 			Scanner scanner = new Scanner(new FileInputStream("./data/COAE.digital.raw"));
+//			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./data/HIT.data"), "UTF-8");
 			OutputStreamWriter ow = new OutputStreamWriter(new FileOutputStream("./data/COAE.digital.data"), "UTF-8");
 			StringBuilder instance = new StringBuilder();
 			boolean isOp = false;
@@ -40,16 +42,41 @@ public class RawToData {
 					
 					sb.append(lines[0] + " --- " + lines[1] + " --- ");
 					
+					////////////
+					
+//					/*
 					sb.append("W:" + elements[0] + " ");
 					sb.append("#W:" + elements[0] + " ");
 					sb.append("WW:" + "[" + elements[1] + "] ");
-					sb.append("#DWW:" + "[" + elements[0] + "|" + elements[5] + "] ");
+					sb.append("POS:" + elements[2] + " ");
 					sb.append("#POS:" + elements[2] + " ");
-					sb.append("PPOS:" + elements[3] + " ");
-					sb.append("DPPOS:" + "[" + elements[2] + "|" + elements[6] + "] ");
+					sb.append("POSPOS:" + elements[3] + " ");
+					sb.append(elements[7] + " ");
+					sb.append(elements[8]);
+//					*/
+					
+					///////////
+					
+/*					
+					sb.append("W:" + elements[0] + " ");
+					sb.append("#W:" + elements[0] + " ");
+					// #DW
+					sb.append("#" + elements[5] + " ");
+					sb.append("WW:" + "[" + elements[1] + "] ");
+					sb.append("#DWW:" + "[" + elements[0] + "|" + elements[5] + "] ");
+					sb.append("POS:" + elements[2] + " ");
+					sb.append("#POS:" + elements[2] + " ");
+					sb.append("POSPOS:" + elements[3] + " ");
+					sb.append("#POSPOS:" + elements[3] + " ");
+					sb.append("DPOSPOS:" + "[" + elements[2] + "|" + elements[6] + "] ");
+					sb.append("#DPOSPOS:" + "[" + elements[2] + "|" + elements[6] + "] ");
+					// #dep
 					sb.append("#" + elements[4] + " ");
 					sb.append(elements[7] + " ");
 					sb.append(elements[8]);
+*/
+					///////////
+					
 //					System.out.println(sb.toString());
 					instance.append(sb.toString() + "\r\n");
 //					ow.write(sb.toString() + "\r\n");
